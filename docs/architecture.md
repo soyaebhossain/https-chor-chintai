@@ -1,6 +1,6 @@
 # Architecture
 
-The repository uses a modular-monolith path: one public/user web application, one protected moderation surface, one API boundary and one asynchronous worker. PostgreSQL remains authoritative; Redis is disposable queue/cache state; object storage holds quarantined evidence.
+The repository uses a modular-monolith path: one public/user web application, one protected moderation surface and its API route handlers, all in one Next.js app. PostgreSQL is authoritative; S3-compatible object storage holds quarantined evidence.
 
 ## Identifier lookup
 
@@ -9,6 +9,8 @@ The repository uses a modular-monolith path: one public/user web application, on
 3. Compute `HMAC-SHA-256(server_secret, type + ':' + normalized_value)`.
 4. Query the unique indexed HMAC value.
 5. Return only status, product category, jurisdiction, report date and last four characters.
+
+The public search box has one input, so `planSearch` looks the value up under every type it could be (a valid 15-digit IMEI is checked as `IMEI` and `SERIAL`). A 15-digit number that fails Luhn is rejected as a typo. Only products in `REPORTED` (approved) or `DISPUTED` (under appeal) are visible; every other state answers exactly like "no record". Implemented in `lib/server/registry.ts`.
 
 Never log raw identifiers. Encrypt the recoverable value with a KMS-managed data key. A “not found” response is not proof of lawful ownership.
 
@@ -20,12 +22,22 @@ Moderators may also move a claim to `NEEDS_INFO`, `REJECTED` or `DISPUTED`. Publ
 
 ## Upload pipeline
 
-Browser → presigned quarantine upload → MIME verification → malware scan → OCR → redaction → risk scoring → human review → encrypted evidence bucket.
+Implemented: browser → server action (≤5 files, ≤10 MB each) → magic-byte type check (PDF/JPEG/PNG only) → SHA-256 → AES-256-GCM encryption in the app → private S3 bucket → heuristic risk score → human review → decrypted only through the authenticated, audited `/admin/documents/:id` route.
 
-## Target repository split
+Still to add: malware scan and OCR (status columns exist on `claim_documents`; the console warns while files are unscanned).
 
-- `app/`, `components/`: runnable Next/Vinext web experience
-- `db/`: deployable D1/Drizzle MVP schema
-- `services/api`: NestJS production API reference
-- `services/worker`: BullMQ automation reference
+## Repository layout
+
+One Next.js app (modular monolith). Background work moves to a separate worker only once scanning/OCR volume justifies it.
+
+- `app/`: pages and the `/api/v1/*` route handlers
+- `components/`: UI
+- `lib/identifiers.ts`: normalization and format checks (client and server)
+- `lib/server/`: env validation, HMAC/encryption and registry queries (server-only)
+- `db/`: Drizzle PostgreSQL schema; `drizzle/` holds the committed migrations
+- `lib/server/auth.ts`: DB sessions, `requireUser` / `requireStaff` (role + TOTP)
+- `lib/server/claims.ts`: report submission, review decisions, read models
+- `scripts/`: `set-role.ts` (grant reviewer/admin), `storage-init.ts` (create private bucket)
 - `docs/`: security and integration contracts
+
+`updated_at` is set by Drizzle on update. Raw SQL updates must set it themselves.

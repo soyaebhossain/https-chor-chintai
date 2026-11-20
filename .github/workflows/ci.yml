@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, typecheck, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+  e2e:
+    name: E2E, backup/restore, Lighthouse
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      DATABASE_URL: postgresql://registry:registry@localhost:5432/registry
+      S3_ENDPOINT: http://localhost:8333
+      S3_REGION: us-east-1
+      S3_BUCKET: claim-evidence
+      S3_ACCESS_KEY_ID: local-dev
+      S3_SECRET_ACCESS_KEY: local-dev-only-secret
+      S3_FORCE_PATH_STYLE: "true"
+      CLIENT_IP_HEADER: x-forwarded-for
+      PW_CHANNEL: chrome
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Generate throw-away secrets
+        run: |
+          echo "IDENTIFIER_HMAC_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "FIELD_ENCRYPTION_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+
+      - name: Start PostgreSQL and S3
+        run: docker compose up -d --wait
+
+      - name: Migrate and create the bucket
+        run: |
+          npm run db:migrate
+          for i in 1 2 3 4 5 6 7 8 9 10; do npm run storage:init && break; sleep 3; done
+
+      - name: E2E tests
+        run: npm run test:e2e
+
+      - name: Backup and restore test
+        run: |
+          npm run db:backup -- --docker
+          npm run db:restore-test -- --docker
+
+      - name: Retention purge (dry run)
+        run: npm run data:purge -- --dry-run
+
+      - name: Production build + Lighthouse
+        env:
+          # Cloudflare's always-pass Turnstile test keys.
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+          TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+          NEXT_PUBLIC_CONTACT_EMAIL: support@chor-chintai.test
+          SMTP_URL: smtp://localhost:2525
+          MAIL_FROM: ci@chor-chintai.test
+          # Served over plain http://localhost, so skip HSTS / upgrade-insecure-requests.
+          LOCAL_HTTP_PREVIEW: "1"
+        run: |
+          npm run build
+          npx --yes @lhci/cli@0.14.0 autorun
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: |
+            test-results/
+            .lighthouseci/
+          if-no-files-found: ignore
+          retention-days: 14

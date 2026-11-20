@@ -37,8 +37,12 @@ yarn-error.log*
 # typescript
 next-env.d.ts
 *.tsbuildinfo
-/dist/
-/.wrangler/
-/.sites-runtime/
-/outputs/
-/work/
+
+# local dev email sink and e2e output
+/.dev-mail/
+/test-results/
+/playwright-report/
+
+# database backups — never commit
+/backups/
+/.lighthouseci/

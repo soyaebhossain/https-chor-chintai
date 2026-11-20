@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="bn"><body className="antialiased">{children}</body></html>;
+  return <html lang="bn" data-scroll-behavior="smooth"><body className="antialiased">{children}</body></html>;
 }

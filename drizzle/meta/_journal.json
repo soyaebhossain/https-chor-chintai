@@ -1,5 +1,20 @@
 {
   "version": "7",
-  "dialect": "sqlite",
-  "entries": []
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1795179578038,
+      "tag": "0000_init",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795182242946,
+      "tag": "0001_disputes_and_recovery",
+      "breakpoints": true
+    }
+  ]
 }
