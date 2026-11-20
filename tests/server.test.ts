@@ -131,3 +131,31 @@ describe("file encryption", () => {
 it("keyedHash separates purposes", () => {
   expect(keyedHash("s".repeat(40), "a", "x")).not.toBe(keyedHash("s".repeat(40), "b", "x"));
 });
+
+describe("password hashing", async () => {
+  const { hashPassword, verifyPassword, passwordProblem, burnPasswordCheck } = await import("@/lib/server/password");
+
+  it("verifies the right password and rejects others", async () => {
+    const stored = await hashPassword("আমার-বাইক-লাল-2026");
+    expect(stored).toMatch(/^scrypt\$32768\$8\$1\$/);
+    expect(await verifyPassword("আমার-বাইক-লাল-2026", stored)).toBe(true);
+    expect(await verifyPassword("আমার-বাইক-লাল-2027", stored)).toBe(false);
+  });
+
+  it("salts every hash", async () => {
+    expect(await hashPassword("same-password-123")).not.toBe(await hashPassword("same-password-123"));
+  });
+
+  it("rejects malformed stored values", async () => {
+    expect(await verifyPassword("x", "not-a-hash")).toBe(false);
+    expect(await burnPasswordCheck("whatever")).toBe(false);
+  });
+
+  it("explains weak passwords", () => {
+    expect(passwordProblem("short", "a@b.com")).toMatch(/কমপক্ষে/);
+    expect(passwordProblem("aaaaaaaaaaaa", "a@b.com")).toMatch(/খুব সহজ/);
+    expect(passwordProblem("1234567890", "a@b.com")).toMatch(/খুব সহজ/);
+    expect(passwordProblem("karim-secret-pass", "karim@example.com")).toMatch(/ইমেইলের নাম/);
+    expect(passwordProblem("আমার-বাইক-লাল-২০২৬", "karim@example.com")).toBeNull();
+  });
+});

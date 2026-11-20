@@ -43,6 +43,7 @@ export async function sendMail(message: { to: string; subject: string; text: str
 
 /** For notifications that must not break the main action if mail is down. */
 export async function sendMailSafely(message: { to: string; subject: string; text: string }): Promise<void> {
+  if (!mailAvailable()) return; // email not configured (yet): notifications are simply skipped
   try {
     await sendMail(message);
   } catch (error) {

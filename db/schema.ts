@@ -38,6 +38,8 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").unique(),
   phone: text("phone").unique(),
+  /** scrypt hash ("scrypt$N$r$p$salt$hash"); null for accounts that only use email codes. */
+  passwordHash: text("password_hash"),
   displayName: text("display_name"),
   role: userRole("role").notNull().default("USER"),
   countryCode: text("country_code").notNull().default("BD"),

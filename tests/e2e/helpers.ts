@@ -46,6 +46,9 @@ const mailFile = (email: string) => path.join(process.cwd(), ".dev-mail", `${ema
 
 export async function requestCode(page: Page, email: string) {
   rmSync(mailFile(email), { force: true });
+  // The login page opens on email + password; code login sits behind a link.
+  const toCode = page.getByRole("button", { name: "পাসওয়ার্ড ছাড়া, ইমেইলে কোড দিয়ে লগইন" });
+  if (await toCode.isVisible().catch(() => false)) await toCode.click();
   await page.getByLabel("ইমেইল ঠিকানা").fill(email);
   await page.getByRole("button", { name: "কোড পাঠান" }).click();
   await expect(page.getByLabel("লগইন কোড")).toBeVisible();
@@ -94,4 +97,16 @@ export async function resetRateLimits() {
   try { process.loadEnvFile(); } catch {}
   const sql = postgres(process.env.DATABASE_URL!, { max: 1 });
   try { await sql`delete from rate_limits`; } finally { await sql.end(); }
+}
+
+export async function passwordAuth(page: Page, mode: "login" | "signup", email: string, password: string) {
+  await page.getByRole("tab", { name: mode === "signup" ? "নতুন অ্যাকাউন্ট" : "লগইন" }).click();
+  await page.getByLabel("ইমেইল ঠিকানা").fill(email);
+  await page.getByLabel("পাসওয়ার্ড", { exact: true }).fill(password);
+  if (mode === "signup") await page.getByLabel("পাসওয়ার্ড আবার লিখুন").fill(password);
+  // Wait for the server action's answer, so a stale error from the previous attempt can't satisfy the next check.
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname.startsWith("/login")),
+    page.getByRole("button", { name: mode === "signup" ? "অ্যাকাউন্ট খুলুন" : "লগইন করুন" }).click(),
+  ]);
 }

@@ -48,6 +48,8 @@ const mailFile = (email: string) => path.join(process.cwd(), ".dev-mail", `${ema
 
 async function login(page: Page, email: string) {
   rmSync(mailFile(email), { force: true });
+  const toCode = page.getByRole("button", { name: "পাসওয়ার্ড ছাড়া, ইমেইলে কোড দিয়ে লগইন" });
+  if (await toCode.isVisible().catch(() => false)) await toCode.click();
   await page.getByLabel("ইমেইল ঠিকানা").fill(email);
   await page.getByRole("button", { name: "কোড পাঠান" }).click();
   await expect(page.getByLabel("লগইন কোড")).toBeVisible();
