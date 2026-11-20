@@ -221,3 +221,37 @@ test("moderation surface is closed to everyone but MFA-verified staff", async ({
   expect((await user.request.get("/admin/claims/00000000-0000-4000-8000-000000000000")).status()).toBe(404);
   await expect(user.getByRole("link", { name: "যাচাই কনসোল" })).toHaveCount(0);
 });
+
+test("INITIAL_ADMIN_EMAIL bootstraps exactly one admin, then goes inert", async ({ browser }) => {
+  const postgres = (await import("postgres")).default;
+  try { process.loadEnvFile(); } catch {}
+  const sql = postgres(process.env.DATABASE_URL!, { max: 1 });
+  try {
+    await sql`delete from users where email = 'first-admin@e2e.test'`;
+    const [{ n }] = await sql`select count(*)::int as n from users where role = 'ADMIN'`;
+
+    const page = await (await browser.newContext()).newPage();
+    await page.goto("/login");
+    await login(page, "first-admin@e2e.test");
+    if (n === 0) {
+      await expect(page).toHaveURL(/\/account\/mfa/); // admin, but MFA is still required before the console
+      const [row] = await sql`select role from users where email = 'first-admin@e2e.test'`;
+      expect(row.role).toBe("ADMIN");
+    } else {
+      await expect(page).toHaveURL(/\/dashboard$/);
+      const [row] = await sql`select role from users where email = 'first-admin@e2e.test'`;
+      expect(row.role).toBe("USER"); // an admin already exists: the setting does nothing
+    }
+
+    // A second, different email never becomes admin through this path.
+    const other = await (await browser.newContext()).newPage();
+    await other.goto("/login");
+    await login(other, `not-admin-${run}@e2e.test`);
+    await expect(other).toHaveURL(/\/dashboard$/);
+    const [r2] = await sql`select role from users where email = ${`not-admin-${run}@e2e.test`}`;
+    expect(r2.role).toBe("USER");
+  } finally {
+    await sql`update users set role = 'USER' where email = 'first-admin@e2e.test'`;
+    await sql.end();
+  }
+});

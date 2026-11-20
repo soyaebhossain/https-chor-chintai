@@ -1,12 +1,13 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 import { getDb } from "@/db";
-import { sessions, users } from "@/db/schema";
+import { auditLogs, sessions, users } from "@/db/schema";
 import { safeNextPath } from "@/lib/safe-path";
+import { getEnv } from "@/lib/server/env";
 
 const isProd = process.env.NODE_ENV === "production";
 // __Host- cookies must be Secure, path=/ and have no Domain: they cannot be set or overwritten by a subdomain.
@@ -84,4 +85,25 @@ export async function requireStaff(returnTo: string): Promise<Session> {
     redirect(`/account/mfa?next=${encodeURIComponent(safeNextPath(returnTo))}`);
   }
   return session;
+}
+
+/**
+ * Hosted platforms (Vercel) give no shell to run `npm run user:role`, so the
+ * very first admin is designated by INITIAL_ADMIN_EMAIL. It only ever fires
+ * while the system has no ADMIN at all; once one exists, roles are managed
+ * normally and this setting is inert. MFA is still enforced on first visit.
+ */
+export async function bootstrapFirstAdmin<T extends { id: string; role: Role }>(user: T, email: string): Promise<T> {
+  const wanted = getEnv().INITIAL_ADMIN_EMAIL?.trim().toLowerCase();
+  if (!wanted || wanted !== email || user.role === "ADMIN") return user;
+  const db = getDb();
+  return db.transaction(async (tx) => {
+    // Serialise concurrent first logins so two admins can never be bootstrapped.
+    await tx.execute(sql`select pg_advisory_xact_lock(42001)`);
+    const [existing] = await tx.select({ id: users.id }).from(users).where(eq(users.role, "ADMIN")).limit(1);
+    if (existing) return user;
+    await tx.update(users).set({ role: "ADMIN" }).where(eq(users.id, user.id));
+    await tx.insert(auditLogs).values({ actorId: user.id, action: "ROLE_BOOTSTRAP_ADMIN", entityType: "user", entityId: user.id, metadata: { via: "INITIAL_ADMIN_EMAIL" } });
+    return { ...user, role: "ADMIN" as const };
+  });
 }

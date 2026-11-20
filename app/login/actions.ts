@@ -7,7 +7,7 @@ import { z } from "zod";
 import { getDb } from "@/db";
 import { auditLogs, users } from "@/db/schema";
 import { safeNextPath } from "@/lib/safe-path";
-import { createSession, isStaff } from "@/lib/server/auth";
+import { bootstrapFirstAdmin, createSession, isStaff } from "@/lib/server/auth";
 import { consumeLoginCode, issueLoginCode, recentCodeCount } from "@/lib/server/login-codes";
 import { sendMail } from "@/lib/server/mailer";
 import { clientIp, formatRetry, rateLimit } from "@/lib/server/rate-limit";
@@ -54,7 +54,8 @@ export async function loginAction(prev: LoginState, form: FormData): Promise<Log
 
     const db = getDb();
     await db.insert(users).values({ email }).onConflictDoNothing({ target: users.email });
-    const [user] = await db.select({ id: users.id, role: users.role }).from(users).where(eq(users.email, email));
+    let [user] = await db.select({ id: users.id, role: users.role }).from(users).where(eq(users.email, email));
+    user = await bootstrapFirstAdmin(user, email);
     await createSession(user.id, user.role);
     await db.insert(auditLogs).values({ actorId: user.id, action: "LOGIN", entityType: "user", entityId: user.id });
 

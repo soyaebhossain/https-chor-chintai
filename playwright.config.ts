@@ -22,6 +22,7 @@ export default defineConfig({
     command: "npx next dev -p 3100",
     url: "http://localhost:3100",
     reuseExistingServer: false,
+    env: { INITIAL_ADMIN_EMAIL: "first-admin@e2e.test" },
     timeout: 120_000,
   },
 });

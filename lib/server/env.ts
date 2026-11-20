@@ -44,6 +44,9 @@ export const envSchema = z
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
     TURNSTILE_SECRET_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
 
+    // The first person to log in with this email becomes ADMIN — only while no admin exists yet.
+    INITIAL_ADMIN_EMAIL: z.preprocess(emptyToUndefined, z.string().email().optional()),
+
     // Shown on the privacy, terms and takedown pages. Required in production.
     NEXT_PUBLIC_CONTACT_EMAIL: z.preprocess(emptyToUndefined, z.string().email().optional()),
   })
