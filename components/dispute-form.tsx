@@ -1,5 +1,6 @@
 "use client";
 
+import ScrollHere from "@/components/scroll-here";
 import Link from "next/link";
 import { useActionState } from "react";
 import { AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
@@ -16,7 +17,8 @@ export default function DisputeForm() {
   const e = state.errors ?? {};
 
   if (state.reference) {
-    return <div role="status" className="rounded-[2rem] border border-emerald-200 bg-white p-8 text-center shadow-xl md:p-10">
+    return <div role="status" className="scroll-mt-28 rounded-[2rem] border border-emerald-200 bg-white p-8 text-center shadow-xl md:p-10">
+      <ScrollHere />
       <CheckCircle2 className="mx-auto size-14 text-emerald-600" />
       <h2 className="mt-4 text-2xl font-black text-emerald-950">আপত্তি গ্রহণ করা হয়েছে</h2>
       <p className="mt-3 text-slate-600">রেফারেন্স: <b className="font-mono text-emerald-950">{state.reference}</b></p>
