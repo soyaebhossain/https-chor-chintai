@@ -1,4 +1,5 @@
 import { defineConfig } from "drizzle-kit";
+import { resolveDatabaseUrl } from "./lib/database-url.mjs";
 
 try {
   process.loadEnvFile();
@@ -10,6 +11,6 @@ export default defineConfig({
   out: "./drizzle",
   schema: "./db/schema.ts",
   dialect: "postgresql",
-  dbCredentials: { url: process.env.DATABASE_URL ?? "" },
+  dbCredentials: { url: resolveDatabaseUrl(process.env, { direct: true }) ?? "" },
   strict: true,
 });

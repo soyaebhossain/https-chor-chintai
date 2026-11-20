@@ -5,6 +5,7 @@
  * If a migration fails the build fails, and the previous version stays live.
  */
 import { spawnSync } from "node:child_process";
+import { resolveDatabaseUrl } from "../lib/database-url.mjs";
 
 const run = (cmd, args) => {
   const r = spawnSync(cmd, args, { stdio: "inherit", shell: process.platform === "win32" });
@@ -12,7 +13,7 @@ const run = (cmd, args) => {
 };
 
 if (process.env.VERCEL_ENV === "production") {
-  if (!process.env.DATABASE_URL) {
+  if (!resolveDatabaseUrl(process.env)) {
     console.error("DATABASE_URL is not set for production — connect the database before deploying.");
     process.exit(1);
   }

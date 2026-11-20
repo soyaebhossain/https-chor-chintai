@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { resolveDatabaseUrl } from "@/lib/database-url.mjs";
 
 const PLACEHOLDER = /replace|change-me|development-only|example/i;
 
@@ -73,7 +74,7 @@ let cached: Env | undefined;
  */
 export function getEnv(source: NodeJS.ProcessEnv = process.env): Env {
   if (cached && source === process.env) return cached;
-  const parsed = envSchema.safeParse(source);
+  const parsed = envSchema.safeParse({ ...source, DATABASE_URL: resolveDatabaseUrl(source) });
   if (!parsed.success) {
     const problems = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
     throw new Error(`Invalid server environment:\n${problems}`);
