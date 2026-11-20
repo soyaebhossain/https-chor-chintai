@@ -37,8 +37,8 @@ export async function loginAction(prev: LoginState, form: FormData): Promise<Log
     try {
       await sendMail({
         to: email,
-        subject: `${code} — চোর ছিনতাই লগইন কোড`,
-        text: `আপনার লগইন কোড: ${code}\n\nকোডটি ১০ মিনিট কার্যকর থাকবে। আপনি অনুরোধ না করে থাকলে এই ইমেইল উপেক্ষা করুন।\nকেউ ফোন বা মেসেজে এই কোড চাইলে দেবেন না।\n\n— চোর ছিনতাই`,
+        subject: `${code} — চুরি-ছিন্তাই লগইন কোড`,
+        text: `আপনার লগইন কোড: ${code}\n\nকোডটি ১০ মিনিট কার্যকর থাকবে। আপনি অনুরোধ না করে থাকলে এই ইমেইল উপেক্ষা করুন।\nকেউ ফোন বা মেসেজে এই কোড চাইলে দেবেন না।\n\n— চুরি-ছিন্তাই`,
       });
     } catch (error) {
       console.error("login code delivery failed:", error instanceof Error ? error.message : error);

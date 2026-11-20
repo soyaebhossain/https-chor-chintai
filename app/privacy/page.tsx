@@ -3,8 +3,8 @@ import LegalPage, { Contact, Section } from "@/components/legal-page";
 import { RETENTION } from "@/lib/retention";
 
 export const metadata: Metadata = {
-  title: "গোপনীয়তা নীতি — চোর ছিনতাই",
-  description: "চোর ছিনতাই কোন তথ্য সংগ্রহ করে, কেন করে, কে দেখতে পায় এবং কতদিন রাখে।",
+  title: "গোপনীয়তা নীতি — চুরি-ছিন্তাই",
+  description: "চুরি-ছিন্তাই কোন তথ্য সংগ্রহ করে, কেন করে, কে দেখতে পায় এবং কতদিন রাখে।",
 };
 
 const n = (v: number) => v.toLocaleString("bn-BD");

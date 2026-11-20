@@ -1,4 +1,4 @@
-# চোর ছিনতাই — Trusted Product Registry
+# চুরি-ছিন্তাই — Trusted Product Registry
 
 চুরি/ছিনতাই হওয়া পণ্যের Serial, IMEI, VIN বা Service Tag রিপোর্ট ও যাচাইয়ের প্ল্যাটফর্ম। Next.js + PostgreSQL (Drizzle) + S3-সামঞ্জস্যপূর্ণ স্টোরেজ দিয়ে একটি modular monolith। কোনো ডেমো বা নমুনা ডেটা নেই—সবকিছু আসল ডেটাবেজ থেকে আসে।
 

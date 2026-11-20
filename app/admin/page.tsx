@@ -7,7 +7,7 @@ import { requireStaff } from "@/lib/server/auth";
 import { queueStats, reviewQueue, riskLabel } from "@/lib/server/claims";
 import { disputeQueue } from "@/lib/server/disputes";
 
-export const metadata: Metadata = { title: "যাচাই কনসোল — চোর ছিনতাই", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "যাচাই কনসোল — চুরি-ছিন্তাই", robots: { index: false, follow: false } };
 
 const RISK_TONE = { High: "bg-red-100 text-red-700", Medium: "bg-amber-100 text-amber-700", Low: "bg-emerald-100 text-emerald-700" } as const;
 

@@ -3,7 +3,7 @@ import Link from "next/link";
 import LegalPage, { Contact, Section } from "@/components/legal-page";
 
 export const metadata: Metadata = {
-  title: "অপসারণ ও আপিল প্রক্রিয়া — চোর ছিনতাই",
+  title: "অপসারণ ও আপিল প্রক্রিয়া — চুরি-ছিন্তাই",
   description: "ভুল রিপোর্টের বিরুদ্ধে আপিল, রিপোর্ট প্রত্যাহার ও তথ্য অপসারণের অনুরোধ যেভাবে করবেন।",
 };
 

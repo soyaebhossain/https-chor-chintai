@@ -3,7 +3,8 @@ import { searchRegistry } from "@/lib/server/registry";
 import { clientIp, rateLimit } from "@/lib/server/rate-limit";
 import { TURNSTILE_ERROR, verifyTurnstile } from "@/lib/server/turnstile";
 
-const Body = z.object({ query: z.string().max(128), turnstileToken: z.string().max(2048).optional() });
+const Body = z.object({ query: z.string(), turnstileToken: z.string().max(2048).optional() });
+const MAX_QUERY = 128;
 
 const noStore = { "Cache-Control": "no-store" };
 
@@ -17,6 +18,12 @@ export async function POST(request: Request) {
     body = Body.parse(await request.json());
   } catch {
     return Response.json({ error: "Body must be JSON: { \"query\": string }" }, { status: 400, headers: noStore });
+  }
+  if (body.query.length > MAX_QUERY) {
+    return Response.json(
+      { status: "invalid", error: "LENGTH", message: "নম্বরটি ৪ থেকে ৬৪ অক্ষরের হতে হবে (IMEI ১৫ অঙ্ক, VIN ১৭ অক্ষর)।" },
+      { status: 422, headers: noStore },
+    );
   }
 
   try {

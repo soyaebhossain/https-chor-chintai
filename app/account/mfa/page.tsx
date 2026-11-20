@@ -14,7 +14,7 @@ import { decryptField, encryptField } from "@/lib/server/crypto";
 import { getEnv } from "@/lib/server/env";
 import { generateTotpSecret, otpauthUri } from "@/lib/server/totp";
 
-export const metadata: Metadata = { title: "দুই-ধাপ যাচাই — চোর ছিনতাই", robots: { index: false } };
+export const metadata: Metadata = { title: "দুই-ধাপ যাচাই — চুরি-ছিন্তাই", robots: { index: false } };
 
 export default async function MfaPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const session = await requireUser("/account/mfa");

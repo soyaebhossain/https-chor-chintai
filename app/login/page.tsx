@@ -8,7 +8,7 @@ import { safeNextPath } from "@/lib/safe-path";
 import { getSession, isStaff } from "@/lib/server/auth";
 import { mailAvailable } from "@/lib/server/mailer";
 
-export const metadata: Metadata = { title: "লগইন — চোর ছিনতাই", robots: { index: false } };
+export const metadata: Metadata = { title: "লগইন — চুরি-ছিন্তাই", robots: { index: false } };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const requested = (await searchParams).next;

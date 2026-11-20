@@ -10,7 +10,7 @@ import { requireStaff } from "@/lib/server/auth";
 import { logStaffAccess } from "@/lib/server/claims";
 import { disputeForReview } from "@/lib/server/disputes";
 
-export const metadata: Metadata = { title: "আপত্তি পর্যালোচনা — চোর ছিনতাই", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "আপত্তি পর্যালোচনা — চুরি-ছিন্তাই", robots: { index: false, follow: false } };
 
 export default async function DisputeReviewPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }) {
   const { id } = await params;

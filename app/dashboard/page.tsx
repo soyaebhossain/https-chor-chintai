@@ -10,7 +10,7 @@ import { listMyClaims } from "@/lib/server/claims";
 import { listMyDisputes } from "@/lib/server/disputes";
 
 export const metadata: Metadata = {
-  title: "আমার রিপোর্ট — চোর ছিনতাই",
+  title: "আমার রিপোর্ট — চুরি-ছিন্তাই",
   description: "জমা দেওয়া পণ্য রিপোর্টের যাচাই ও প্রকাশের অবস্থা দেখুন।",
   robots: { index: false },
 };

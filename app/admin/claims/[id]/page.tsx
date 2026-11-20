@@ -11,7 +11,7 @@ import { claimForReview, logStaffAccess, riskLabel } from "@/lib/server/claims";
 import { decryptField } from "@/lib/server/crypto";
 import { getEnv } from "@/lib/server/env";
 
-export const metadata: Metadata = { title: "রিপোর্ট পর্যালোচনা — চোর ছিনতাই", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "রিপোর্ট পর্যালোচনা — চুরি-ছিন্তাই", robots: { index: false, follow: false } };
 
 const ACTION_LABEL: Record<string, string> = {
   CLAIM_SUBMITTED: "রিপোর্ট জমা",

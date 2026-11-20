@@ -21,7 +21,8 @@
     "test:e2e": "playwright test",
     "db:backup": "tsx --conditions=react-server --env-file-if-exists=.env scripts/db-backup.ts",
     "db:restore-test": "tsx --conditions=react-server --env-file-if-exists=.env scripts/db-restore-test.ts",
-    "data:purge": "tsx --conditions=react-server --env-file-if-exists=.env scripts/purge-expired.ts"
+    "data:purge": "tsx --conditions=react-server --env-file-if-exists=.env scripts/purge-expired.ts",
+    "test:live": "playwright test --config playwright.prod.config.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1173.0",

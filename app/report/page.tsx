@@ -5,7 +5,7 @@ import ReportForm from "@/components/report-form";
 import { requireUser } from "@/lib/server/auth";
 
 export const metadata: Metadata = {
-  title: "পণ্য রিপোর্ট করুন — চোর ছিনতাই",
+  title: "পণ্য রিপোর্ট করুন — চুরি-ছিন্তাই",
   description: "চুরি, ছিনতাই বা হারানো পণ্যের তথ্য ও মালিকানার প্রমাণ জমা দিন।",
 };
 

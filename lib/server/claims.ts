@@ -186,7 +186,7 @@ export async function submitReport(reporter: Actor, input: ReportInput, evidence
     await sendMailSafely({
       to: reporter.email,
       subject: `রিপোর্ট গ্রহণ করা হয়েছে — ${trackingId}`,
-      text: `আপনার রিপোর্ট (${input.brand} ${input.model}) আমরা পেয়েছি।\nTracking ID: ${trackingId}\n\nএকজন যাচাইকারী প্রমাণ পর্যালোচনা করবেন। অনুমোদনের আগে কোনো তথ্য প্রকাশ করা হবে না।\nপণ্যটি ফেরত পেলে ড্যাশবোর্ড থেকে “ফেরত পেয়েছি” চাপুন—তাহলে সতর্কতা সরিয়ে নেওয়া হবে।\n\n— চোর ছিনতাই`,
+      text: `আপনার রিপোর্ট (${input.brand} ${input.model}) আমরা পেয়েছি।\nTracking ID: ${trackingId}\n\nএকজন যাচাইকারী প্রমাণ পর্যালোচনা করবেন। অনুমোদনের আগে কোনো তথ্য প্রকাশ করা হবে না।\nপণ্যটি ফেরত পেলে ড্যাশবোর্ড থেকে “ফেরত পেয়েছি” চাপুন—তাহলে সতর্কতা সরিয়ে নেওয়া হবে।\n\n— চুরি-ছিন্তাই`,
     });
   }
   return { ok: true, trackingId };
@@ -295,7 +295,7 @@ export async function decideClaim(reviewer: Actor, claimId: string, decision: De
     await sendMailSafely({
       to: reporter.email,
       subject: `আপনার রিপোর্ট ${outcome.trackingId} ${headline}`,
-      text: `Tracking ID: ${outcome.trackingId}\nঅবস্থা: ${headline}\n${note.trim() ? `\nযাচাইকারীর মন্তব্য:\n${note.trim()}\n` : ""}\nবিস্তারিত দেখতে ড্যাশবোর্ডে লগইন করুন।\n\n— চোর ছিনতাই`,
+      text: `Tracking ID: ${outcome.trackingId}\nঅবস্থা: ${headline}\n${note.trim() ? `\nযাচাইকারীর মন্তব্য:\n${note.trim()}\n` : ""}\nবিস্তারিত দেখতে ড্যাশবোর্ডে লগইন করুন।\n\n— চুরি-ছিন্তাই`,
     });
   }
   return { ok: true };

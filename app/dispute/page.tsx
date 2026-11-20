@@ -5,7 +5,7 @@ import PageFrame from "@/components/page-frame";
 import { requireUser } from "@/lib/server/auth";
 
 export const metadata: Metadata = {
-  title: "রিপোর্টের বিরুদ্ধে আপত্তি — চোর ছিনতাই",
+  title: "রিপোর্টের বিরুদ্ধে আপত্তি — চুরি-ছিন্তাই",
   description: "ভুল রিপোর্টের বিরুদ্ধে প্রমাণসহ আপিল করুন।",
   robots: { index: false },
 };
