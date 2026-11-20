@@ -41,7 +41,7 @@ export default function ReportForm() {
       <p className="mt-3 text-slate-600">Tracking ID: <b className="font-mono text-emerald-950">{state.trackingId}</b></p>
       <ol className="mx-auto mt-6 grid max-w-md gap-2 text-left text-sm leading-6 text-slate-600">
         <li>১. একজন যাচাইকারী আপনার প্রমাণ দেখবেন—সাধারণত ১–২ কার্যদিবস।</li>
-        <li>২. অনুমোদন হলে নম্বরটি সার্চে “রিপোর্টেড” দেখাবে; ইমেইলে জানানো হবে।</li>
+        <li>২. অনুমোদন হলে নম্বরটি সার্চে “রিপোর্টেড” দেখাবে; অবস্থা “আমার রিপোর্ট”-এ দেখা যাবে।</li>
         <li>৩. পণ্য ফেরত পেলে ড্যাশবোর্ডে “ফেরত পেয়েছি” চাপুন।</li>
       </ol>
       <Link href="/dashboard" className="mt-6 inline-block rounded-xl bg-emerald-900 px-5 py-3 text-sm font-bold text-white">আমার রিপোর্ট দেখুন</Link>

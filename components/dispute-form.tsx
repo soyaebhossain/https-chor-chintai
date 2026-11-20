@@ -22,7 +22,7 @@ export default function DisputeForm() {
       <CheckCircle2 className="mx-auto size-14 text-emerald-600" />
       <h2 className="mt-4 text-2xl font-black text-emerald-950">আপত্তি গ্রহণ করা হয়েছে</h2>
       <p className="mt-3 text-slate-600">রেফারেন্স: <b className="font-mono text-emerald-950">{state.reference}</b></p>
-      <p className="mt-1 text-sm text-slate-500">একজন যাচাইকারী উভয় পক্ষের প্রমাণ দেখে সিদ্ধান্ত নেবেন এবং ইমেইলে জানাবেন।</p>
+      <p className="mt-1 text-sm text-slate-500">একজন যাচাইকারী উভয় পক্ষের প্রমাণ দেখে সিদ্ধান্ত নেবেন; ফলাফল আপনার ড্যাশবোর্ডে দেখা যাবে।</p>
       <Link href="/dashboard" className="mt-6 inline-block rounded-xl bg-emerald-900 px-5 py-3 text-sm font-bold text-white">ড্যাশবোর্ডে অবস্থা দেখুন</Link>
     </div>;
   }

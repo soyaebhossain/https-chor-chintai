@@ -60,8 +60,16 @@ test("every button on public pages responds", async ({ page }, info) => {
     await page.getByRole("link", { name }).click();
     await expect(page).toHaveURL(/\/login\?next=%2Freport/);
   }
-  // Login page button
+  // Login page: tabs switch, show-password toggles, a wrong login is refused without revealing anything
   await page.goto("/login");
-  await page.getByRole("link", { name: "পণ্য যাচাই করুন" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await page.getByRole("tab", { name: "নতুন অ্যাকাউন্ট" }).click();
+  await expect(page.getByLabel("পাসওয়ার্ড আবার লিখুন")).toBeVisible();
+  await page.getByRole("tab", { name: "লগইন" }).click();
+  await expect(page.getByLabel("পাসওয়ার্ড আবার লিখুন")).toHaveCount(0);
+  await page.getByRole("button", { name: "পাসওয়ার্ড দেখুন" }).click();
+  await expect(page.getByLabel("পাসওয়ার্ড", { exact: true })).toHaveAttribute("type", "text");
+  await page.getByLabel("ইমেইল ঠিকানা").fill(`nobody-${Date.now()}@example.com`);
+  await page.getByLabel("পাসওয়ার্ড", { exact: true }).fill("not-a-real-password-1");
+  await page.getByRole("button", { name: "লগইন করুন" }).click();
+  await expect(page.getByText("ইমেইল বা পাসওয়ার্ড ভুল।")).toBeVisible();
 });

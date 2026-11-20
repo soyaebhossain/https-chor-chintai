@@ -21,7 +21,7 @@ function claimStatus(status: string, productStatus: string): Tone {
   if (status === "APPROVED" && productStatus === "RECOVERED") return { label: "ফেরত পাওয়া গেছে", tone: "bg-sky-100 text-sky-800", next: "সতর্কতাটি সরিয়ে নেওয়া হয়েছে—এই নম্বর আর “রিপোর্টেড” দেখাবে না। আবার হারালে নতুন করে রিপোর্ট করুন।" };
   if (status === "APPROVED" && productStatus === "DISPUTED") return { label: "আপত্তি পর্যালোচনাধীন", tone: "bg-amber-100 text-amber-800", next: "কেউ রিপোর্টটির বিরুদ্ধে আপত্তি করেছেন; যাচাইকারী দেখছেন। সতর্কতা এখনো দেখাচ্ছে।" };
   return ({
-    PENDING: { label: "যাচাই চলছে", tone: "bg-amber-100 text-amber-800", next: "যাচাইকারী আপনার প্রমাণ দেখছেন। সিদ্ধান্ত হলে ইমেইলে জানানো হবে।" },
+    PENDING: { label: "যাচাই চলছে", tone: "bg-amber-100 text-amber-800", next: "যাচাইকারী আপনার প্রমাণ দেখছেন। সিদ্ধান্ত হলে এই পাতায় দেখা যাবে।" },
     NEEDS_INFO: { label: "আপনার উত্তর প্রয়োজন", tone: "bg-orange-100 text-orange-800" },
     APPROVED: { label: "অনুমোদিত · প্রকাশিত", tone: "bg-emerald-100 text-emerald-800", next: "নম্বরটি এখন সার্চে “রিপোর্টেড” দেখাচ্ছে।" },
     REJECTED: { label: "প্রত্যাখ্যাত", tone: "bg-slate-200 text-slate-700" },

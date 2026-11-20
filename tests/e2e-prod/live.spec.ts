@@ -54,7 +54,8 @@ test("navigation: header links, footer links, report button", async ({ page }, i
     await page.getByRole("link", { name: /^লগইন/ }).first().click();
   }
   await expect(page).toHaveURL(/\/login/);
-  await expect(page.getByText("লগইন শিগগিরই চালু হবে")).toBeVisible();
+  await expect(page.getByRole("tab", { name: "লগইন" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "নতুন অ্যাকাউন্ট" })).toBeVisible();
   await page.screenshot({ path: shot("login-" + info.project.name) });
 
   await page.goto("/");
