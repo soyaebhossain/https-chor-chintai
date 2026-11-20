@@ -13,7 +13,14 @@ type PublicRecord = {
 type Result =
   | { status: "clear" }
   | { status: "reported" | "disputed"; record: PublicRecord }
+  | { status: "own"; report: { trackingId: string; reviewStatus: "PENDING" | "NEEDS_INFO" | "REJECTED"; brand: string; model: string } }
   | { status: "error"; message: string };
+
+const OWN_STATUS = {
+  PENDING: { title: "আপনার রিপোর্টটি যাচাইয়ের অপেক্ষায়", text: "একজন যাচাইকারী অনুমোদন করলে তবেই নম্বরটি সবার সার্চে “রিপোর্টেড” দেখাবে। এর আগে অন্যরা কিছু দেখবেন না—এটি ভুল বা মিথ্যা রিপোর্ট ঠেকাতে।" },
+  NEEDS_INFO: { title: "আপনার রিপোর্টে আরও তথ্য প্রয়োজন", text: "যাচাইকারী কিছু তথ্য চেয়েছেন। “আমার রিপোর্ট” থেকে উত্তর দিলে রিপোর্টটি আবার যাচাইয়ে যাবে।" },
+  REJECTED: { title: "আপনার রিপোর্টটি প্রত্যাখ্যাত হয়েছে", text: "কারণ “আমার রিপোর্ট”-এ দেখুন। আরও প্রমাণসহ নতুন করে রিপোর্ট করতে পারেন।" },
+} as const;
 
 const INCIDENT_LABEL = { THEFT: "চুরি", ROBBERY: "ছিনতাই", LOST: "হারানো" } as const;
 
@@ -35,7 +42,7 @@ export default function SearchBox() {
     try {
       const res = await fetch("/api/v1/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query, turnstileToken: token ?? undefined }) });
       const data = await res.json();
-      if (res.ok && (data.status === "clear" || data.status === "reported" || data.status === "disputed")) setResult(data);
+      if (res.ok && ["clear", "reported", "disputed", "own"].includes(data.status)) setResult(data);
       else setResult({ status: "error", message: data.message ?? data.error ?? "অনুসন্ধান করা যায়নি। আবার চেষ্টা করুন।" });
     } catch {
       setResult({ status: "error", message: "সার্ভারের সাথে সংযোগ করা যায়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।" });
@@ -72,9 +79,13 @@ function RecordDetails({record,tone}:{record:PublicRecord;tone:string}) {
 
 function SearchCard({result}:{result:Result}) {
   if (result.status === "error") return <div role="alert" className="mt-6 flex max-w-2xl gap-4 rounded-3xl border border-amber-200 bg-amber-50 p-5"><AlertTriangle className="size-7 shrink-0 text-amber-600"/><p className="text-sm font-bold leading-6 text-amber-900">{result.message}</p></div>;
+  if (result.status === "own") {
+    const s = OWN_STATUS[result.report.reviewStatus];
+    return <div role="status" className="mt-6 max-w-2xl rounded-3xl border border-sky-200 bg-sky-50 p-5"><div className="flex gap-4"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-sky-600 text-white"><Clock3/></span><div><h3 className="text-lg font-black text-sky-950">{s.title}</h3><p className="mt-1 text-xs font-bold text-sky-700">{result.report.brand} {result.report.model} · <span className="font-mono">{result.report.trackingId}</span></p><p className="mt-2 text-sm leading-6 text-sky-900">{s.text}</p><p className="mt-2 text-xs text-sky-700">এই বার্তাটি শুধু আপনি দেখছেন, কারণ রিপোর্টটি আপনার।</p><Link href="/dashboard" className="mt-3 inline-block rounded-xl bg-sky-700 px-4 py-2 text-sm font-bold text-white">আমার রিপোর্ট দেখুন</Link></div></div></div>;
+  }
   if (result.status === "disputed") return <div className="mt-6 max-w-2xl rounded-3xl border border-amber-200 bg-amber-50 p-5"><div className="flex gap-4"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-amber-500 text-white"><Clock3/></span><div><h3 className="text-lg font-black text-amber-900">রিপোর্টটি নিয়ে আপত্তি পর্যালোচনাধীন</h3><p className="mt-1 text-sm leading-6 text-amber-800">এই নম্বরে একটি রিপোর্ট আছে, তবে এর বিরুদ্ধে আপিল জমা পড়েছে। সিদ্ধান্ত না হওয়া পর্যন্ত কেনার আগে বাড়তি সতর্ক থাকুন ও মালিকানার কাগজ দেখে নিন।</p><RecordDetails record={result.record} tone="text-amber-600"/><AppealLink /></div></div></div>;
   if (result.status === "reported") return <div className="mt-6 max-w-2xl rounded-3xl border border-red-200 bg-red-50 p-5"><div className="flex gap-4"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-red-600 text-white"><AlertTriangle/></span><div><h3 className="text-lg font-black text-red-900">সতর্কতা: রিপোর্ট পাওয়া গেছে</h3><p className="mt-1 text-sm leading-6 text-red-800">মালিক এই পণ্যটি চুরি/ছিনতাই/হারানো বলে প্রমাণসহ জানিয়েছেন এবং তা যাচাই করা হয়েছে।</p><RecordDetails record={result.record} tone="text-red-500"/>
     <div className="mt-4 rounded-2xl bg-white/70 p-4 text-sm leading-6 text-red-900"><p className="font-black">এখন কী করবেন</p><ol className="mt-1 grid gap-1"><li>১. পণ্যটি কিনবেন না, অগ্রিম টাকা দেবেন না।</li><li>২. নিরাপদ থাকুন—বিক্রেতার সাথে তর্ক করবেন না; তার নাম, নম্বর ও বিজ্ঞাপনের লিংক সংরক্ষণ করুন।</li><li>৩. ৯৯৯-এ কল করুন বা নিকটস্থ থানাকে জানান।</li></ol></div>
     <AppealLink /></div></div></div>;
-  return <div className="mt-6 flex max-w-2xl gap-4 rounded-3xl border border-emerald-200 bg-emerald-50 p-5"><CheckCircle2 className="size-8 shrink-0 text-emerald-600"/><div><h3 className="font-black text-emerald-900">বর্তমানে কোনো রিপোর্ট পাওয়া যায়নি</h3><p className="mt-1 text-sm leading-6 text-emerald-800">এটি পণ্যটির বৈধতার নিশ্চয়তা নয়—অনেকে রিপোর্টই করেন না। কেনার আগে: নম্বরটি ডিভাইস, বক্স ও রসিদে এক কি না মেলান, বিক্রেতার NID দেখুন, আর লেনদেন প্রকাশ্য জায়গায় করুন।</p></div></div>;
+  return <div className="mt-6 flex max-w-2xl gap-4 rounded-3xl border border-emerald-200 bg-emerald-50 p-5"><CheckCircle2 className="size-8 shrink-0 text-emerald-600"/><div><h3 className="font-black text-emerald-900">বর্তমানে কোনো রিপোর্ট পাওয়া যায়নি</h3><p className="mt-1 text-sm leading-6 text-emerald-800">এটি পণ্যটির বৈধতার নিশ্চয়তা নয়—অনেকে রিপোর্টই করেন না, আর নতুন রিপোর্ট যাচাইয়ের পরই এখানে দেখা যায়। কেনার আগে: নম্বরটি ডিভাইস, বক্স ও রসিদে এক কি না মেলান, বিক্রেতার NID দেখুন, আর লেনদেন প্রকাশ্য জায়গায় করুন।</p></div></div>;
 }

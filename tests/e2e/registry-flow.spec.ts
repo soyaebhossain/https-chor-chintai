@@ -99,7 +99,9 @@ test("report (dual IMEI) → MFA reviewer approves → search → appeal → rec
   expect(trackingId).toMatch(/^CLM-\d{6}-[0-9A-Z]{6}$/);
 
   // Not public until a human approves it.
-  expect((await search(reporterPage, imei)).status).toBe("clear");
+  expect((await search(reporterPage, imei)).status).toBe("own"); // the reporter is told it's under review
+  const publicPage = await (await browser.newContext()).newPage();
+  expect((await search(publicPage, imei)).status).toBe("clear"); // everyone else sees nothing yet
 
   // --- Reviewer: role granted from the CLI, MFA enrolment forced before the console opens.
   execSync(`npm run user:role -- ${reviewer} REVIEWER`, { stdio: "pipe" });

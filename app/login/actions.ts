@@ -28,7 +28,7 @@ export async function loginAction(prev: LoginState, form: FormData): Promise<Log
 
   if (intent === "send") {
     if (!mailAvailable()) return { step: "email", email, error: LOGIN_UNAVAILABLE };
-    const ipLimit = await rateLimit("login-send-ip", ip, 10, 3600);
+    const ipLimit = await rateLimit("login-send-ip", ip, 30, 3600) /* shared mobile IPs (CGNAT) */;
     if (!ipLimit.ok) return { step: "email", email, error: `অনেকবার চেষ্টা হয়েছে। ${formatRetry(ipLimit.retryAfterSeconds)} পর আবার চেষ্টা করুন।` };
     if (!(await verifyTurnstile(form.get(TURNSTILE_FIELD), ip))) return { step: prev.step, email, error: TURNSTILE_ERROR };
     if ((await recentCodeCount(email)) >= 5) return { step: "email", email, error: "এই ইমেইলে গত এক ঘণ্টায় অনেকগুলো কোড পাঠানো হয়েছে। একটু পরে চেষ্টা করুন।" };

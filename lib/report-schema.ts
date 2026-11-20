@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { classifyForReport, IDENTIFIER_ERROR_MESSAGES, normalizeIdentifier, type ProductKind } from "@/lib/identifiers";
+import { classifyForReport, IDENTIFIER_ERROR_MESSAGES, type ProductKind } from "@/lib/identifiers";
 
 export const CATEGORIES = ["মোবাইল ও ট্যাব", "গাড়ি", "মোটরবাইক", "ল্যাপটপ", "ক্যামেরা", "অন্যান্য"] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -63,17 +63,29 @@ export const reportSchema = z
     attest: z.literal("on", { errorMap: () => ({ message: "তথ্য সত্য বলে নিশ্চিত করতে হবে।" }) }),
   })
   .superRefine((v, ctx) => {
-    const kind = KIND_OF[v.category];
-    const first = classifyForReport(kind, v.identifier);
-    if (!first.ok) ctx.addIssue({ code: "custom", path: ["identifier"], message: IDENTIFIER_ERROR_MESSAGES[first.error] });
-    if (v.identifier2) {
-      const second = classifyForReport(kind, v.identifier2);
-      if (!second.ok) ctx.addIssue({ code: "custom", path: ["identifier2"], message: IDENTIFIER_ERROR_MESSAGES[second.error] });
-      else if (normalizeIdentifier(v.identifier2) === normalizeIdentifier(v.identifier)) {
-        ctx.addIssue({ code: "custom", path: ["identifier2"], message: "দুটি নম্বর একই—দ্বিতীয়টি খালি রাখুন বা আলাদা নম্বর দিন।" });
-      }
-    }
+    const issues = identifierIssues(v.category, v.identifier, v.identifier2);
+    for (const [path, message] of Object.entries(issues)) ctx.addIssue({ code: "custom", path: [path], message });
   });
+
+/**
+ * Number checks for the report form. Exported separately because zod only runs the object-level
+ * refine once every other field is valid — the action calls this directly so a wrong IMEI is
+ * reported straight away, not only after the rest of the form is fixed.
+ */
+export function identifierIssues(category: unknown, identifier: unknown, identifier2: unknown): { identifier?: string; identifier2?: string } {
+  const kind = (CATEGORIES as readonly unknown[]).includes(category) ? KIND_OF[category as Category] : "other";
+  const out: { identifier?: string; identifier2?: string } = {};
+  if (typeof identifier !== "string") return out;
+  const first = classifyForReport(kind, identifier);
+  if (!first.ok) out.identifier = IDENTIFIER_ERROR_MESSAGES[first.error];
+  if (typeof identifier2 === "string" && identifier2.trim()) {
+    const second = classifyForReport(kind, identifier2);
+    if (!second.ok) out.identifier2 = IDENTIFIER_ERROR_MESSAGES[second.error];
+    // Compare the resolved numbers, so "35…80" (14 digits) and "35…809" count as the same IMEI.
+    else if (first.ok && second.value === first.value) out.identifier2 = "দুটি নম্বর একই—দ্বিতীয়টি খালি রাখুন বা আলাদা নম্বর দিন।";
+  }
+  return out;
+}
 
 export type ReportInput = z.infer<typeof reportSchema>;
 export type FieldErrors = Partial<Record<keyof ReportInput | "evidence", string>>;

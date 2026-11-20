@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyForReport, isValidImei, isValidVin, lastFour, luhnValid, normalizeIdentifier, planSearch, validateIdentifier } from "@/lib/identifiers";
+import { classifyForReport, imeiCheckDigit, isValidImei, isValidVin, lastFour, luhnValid, normalizeIdentifier, planSearch, validateIdentifier } from "@/lib/identifiers";
 
 describe("normalizeIdentifier", () => {
   it("strips separators and uppercases", () => {
@@ -60,23 +60,43 @@ describe("validateIdentifier (explicit type)", () => {
 });
 
 describe("planSearch (free-text search box)", () => {
+  const types = (q: string) => { const p = planSearch(q); return p.ok ? p.candidates.map((c) => c.type) : p.error; };
+
   it("searches a valid IMEI as IMEI and serial", () => {
-    expect(planSearch("356938035643809")).toEqual({ ok: true, value: "356938035643809", types: ["IMEI", "SERIAL"] });
+    expect(planSearch("356938035643809")).toEqual({ ok: true, value: "356938035643809", candidates: [{ type: "IMEI", value: "356938035643809" }, { type: "SERIAL", value: "356938035643809" }] });
   });
 
   it("searches a 15-digit non-IMEI as a serial, flagging a likely IMEI typo", () => {
-    expect(planSearch("356938035643808")).toEqual({ ok: true, value: "356938035643808", types: ["SERIAL"], warning: "IMEI_CHECKSUM" });
+    expect(planSearch("356938035643808")).toEqual({ ok: true, value: "356938035643808", candidates: [{ type: "SERIAL", value: "356938035643808" }], warning: "IMEI_CHECKSUM" });
   });
 
   it("includes VIN only for VIN-shaped values", () => {
-    expect(planSearch("1HGCM82633A004352")).toMatchObject({ ok: true, types: ["VIN", "SERIAL"] });
-    expect(planSearch("5CG1234XYZ")).toMatchObject({ ok: true, types: ["SERIAL"] });
+    expect(types("1HGCM82633A004352")).toEqual(["VIN", "SERIAL"]);
+    expect(types("5CG1234XYZ")).toEqual(["SERIAL"]);
   });
 
   it("rejects too short, too long and odd characters", () => {
     expect(planSearch("AB1")).toEqual({ ok: false, error: "LENGTH" });
     expect(planSearch("A".repeat(65))).toEqual({ ok: false, error: "LENGTH" });
     expect(planSearch("abc<script>")).toEqual({ ok: false, error: "BAD_CHARACTERS" });
+  });
+
+  it("explains Bengali text such as a number plate", () => {
+    expect(planSearch("ঢাকা মেট্রো-ল ১২-৩৪৫৬")).toEqual({ ok: false, error: "BENGALI_TEXT" });
+  });
+
+  it("warns when a mobile (SIM) number is searched", () => {
+    for (const q of ["01716573526", "8801716573526", "+880 1716-573526"]) {
+      expect(planSearch(q)).toMatchObject({ ok: true, warning: "PHONE_NUMBER" });
+    }
+  });
+
+  it("finds the IMEI from 14-digit, 16-digit (IMEISV) and O-for-zero forms", () => {
+    const imeiOf = (q: string) => { const p = planSearch(q); return p.ok ? p.candidates.find((c) => c.type === "IMEI")?.value : undefined; };
+    expect(imeiOf("35693803564380")).toBe("356938035643809"); // check digit left off
+    expect(imeiOf("3569380356438012")).toBe("356938035643809"); // IMEISV
+    expect(imeiOf("3569380356438O9")).toBe("356938035643809"); // letter O
+    expect(imeiOf("IMEI1: 356938035643809")).toBe("356938035643809"); // copied label
   });
 });
 
@@ -99,7 +119,22 @@ describe("classifyForReport (owner never picks a type)", () => {
     expect(classifyForReport("vehicle", "E3T5E1234567")).toMatchObject({ ok: true, type: "SERIAL" });
   });
 
+  it("phones: a mobile number or a short number is explained, not stored as a serial", () => {
+    expect(classifyForReport("phone", "01716573526")).toEqual({ ok: false, error: "PHONE_NUMBER" });
+    expect(classifyForReport("phone", "12345678")).toEqual({ ok: false, error: "NOT_IMEI" });
+  });
+
+  it("phones: 14-digit and IMEISV forms are stored as the real 15-digit IMEI", () => {
+    expect(classifyForReport("phone", "35693803564380")).toEqual({ ok: true, value: "356938035643809", type: "IMEI" });
+    expect(classifyForReport("phone", "3569380356438012")).toEqual({ ok: true, value: "356938035643809", type: "IMEI" });
+  });
+
   it("a 15-digit laptop serial is not mistaken for an IMEI", () => {
     expect(classifyForReport("other", "356938035643808")).toMatchObject({ ok: true, type: "SERIAL" });
   });
+});
+
+it("imeiCheckDigit completes a 14-digit body", () => {
+  expect(imeiCheckDigit("35693803564380")).toBe("9");
+  expect(imeiCheckDigit("49015420323751")).toBe("8");
 });

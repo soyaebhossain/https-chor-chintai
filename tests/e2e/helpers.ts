@@ -110,3 +110,6 @@ export async function passwordAuth(page: Page, mode: "login" | "signup", email: 
     page.getByRole("button", { name: mode === "signup" ? "অ্যাকাউন্ট খুলুন" : "লগইন করুন" }).click(),
   ]);
 }
+
+/** The first 14 digits of an IMEI — how some boxes and receipts print it (no check digit). */
+export const imeiBody = (imei: string) => imei.slice(0, 14);

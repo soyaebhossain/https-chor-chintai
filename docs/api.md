@@ -4,7 +4,7 @@ Public JSON API:
 
 | Method | Route | Purpose | Access |
 |---|---|---|---|
-| POST | `/api/v1/search` | Exact identifier lookup `{ "query": string }` | Public, 10/min and 200/day per IP |
+| POST | `/api/v1/search` | Exact identifier lookup `{ "query": string }` | Public, 30/min and 1000/day per IP (sized for mobile carrier-grade NAT) |
 
 Everything else is a Next.js server action or route handler behind a session. Mutations are protected by Next.js's built-in Origin check for server actions and by SameSite=Lax session cookies.
 

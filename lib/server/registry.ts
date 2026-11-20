@@ -50,8 +50,8 @@ export async function searchRegistry(rawQuery: string): Promise<SearchResult> {
       and(
         inArray(products.status, ["REPORTED", "DISPUTED"]),
         or(
-          ...plan.types.map((type) =>
-            and(eq(identifiers.type, type), eq(identifiers.valueHmac, identifierHmac(secret, type, plan.value))),
+          ...plan.candidates.map((c) =>
+            and(eq(identifiers.type, c.type), eq(identifiers.valueHmac, identifierHmac(secret, c.type, c.value))),
           ),
         ),
       ),
@@ -84,4 +84,32 @@ export async function searchRegistry(rawQuery: string): Promise<SearchResult> {
       location: claim?.location ?? null,
     },
   };
+}
+
+export type OwnReport = { trackingId: string; reviewStatus: "PENDING" | "NEEDS_INFO" | "REJECTED"; brand: string; model: string };
+
+/**
+ * A reporter searching their own number while it is still being reviewed
+ * would otherwise see "no record" and think the report was lost. Only the
+ * owner (signed in) is told; everyone else still sees nothing until approval.
+ */
+export async function ownUnpublishedReport(userId: string, rawQuery: string): Promise<OwnReport | null> {
+  const plan = planSearch(rawQuery);
+  if (!plan.ok) return null;
+  const secret = getEnv().IDENTIFIER_HMAC_SECRET;
+  const [row] = await getDb()
+    .select({ trackingId: claims.trackingId, reviewStatus: claims.reviewStatus, brand: products.brand, model: products.model })
+    .from(identifiers)
+    .innerJoin(products, eq(products.id, identifiers.productId))
+    .innerJoin(claims, and(eq(claims.productId, products.id), eq(claims.reporterId, userId)))
+    .where(
+      and(
+        eq(products.ownerId, userId),
+        inArray(claims.reviewStatus, ["PENDING", "NEEDS_INFO", "REJECTED"]),
+        or(...plan.candidates.map((c) => and(eq(identifiers.type, c.type), eq(identifiers.valueHmac, identifierHmac(secret, c.type, c.value))))),
+      ),
+    )
+    .orderBy(desc(claims.createdAt))
+    .limit(1);
+  return row ? (row as OwnReport) : null;
 }

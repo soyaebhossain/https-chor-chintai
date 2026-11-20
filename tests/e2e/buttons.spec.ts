@@ -110,7 +110,8 @@ test("review buttons: needs-info → answer → reject → re-report; appeal uph
   await expect(reporter.getByText("রসিদের নাম ও অ্যাকাউন্টের নাম মেলে না।")).toBeVisible();
   await reporter.getByRole("link", { name: "নতুন করে রিপোর্ট" }).click();
   await expect(reporter).toHaveURL(/\/report$/);
-  expect(await search(reporter, imei1)).toBe("clear");
+  expect(await search(reporter, imei1)).toBe("own"); // reporter sees their rejected report
+  expect(await search(await newPage(browser), imei1)).toBe("clear"); // the public sees nothing
 
   // Report #2 approved → outsider appeals → reviewer upholds → alert removed
   const imei2 = makeImei();
@@ -144,7 +145,8 @@ test("review buttons: needs-info → answer → reject → re-report; appeal uph
   await reviewer.getByLabel(/^কারণ/).fill("আপত্তিকারীর রসিদ ও বক্স যাচাই করা হয়েছে, রিপোর্টটি ভুল ছিল।");
   await reviewer.getByRole("button", { name: "সিদ্ধান্ত সংরক্ষণ করুন" }).click();
   await expect(reviewer).toHaveURL(/decided=APL-/);
-  expect(await search(reporter, imei2)).toBe("clear");
+  expect(await search(await newPage(browser), imei2)).toBe("clear"); // removed from public search
+  expect(await search(reporter, imei2)).toBe("own"); // the reporter still sees it as rejected
   await outsider.reload();
   await expect(outsider.getByText("গৃহীত — রিপোর্ট সরানো হয়েছে")).toBeVisible();
 

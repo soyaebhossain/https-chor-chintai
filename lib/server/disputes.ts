@@ -20,7 +20,7 @@ export async function fileDispute(user: Actor, input: DisputeInput, evidence: Ev
   const plan = planSearch(input.identifier);
   if (!plan.ok) return { ok: false, error: "নম্বরটি সঠিক নয়।" };
   const db = getDb();
-  const hit = await findPublished(db, plan.types.map((type) => ({ type, value: plan.value })));
+  const hit = await findPublished(db, plan.candidates);
   if (!hit) return { ok: false, error: "এই নম্বরে কোনো প্রকাশিত রিপোর্ট নেই—আপত্তির প্রয়োজন নেই।" };
   if (hit.ownerId === user.id) return { ok: false, error: "এটি আপনার নিজের রিপোর্ট। পণ্য ফেরত পেলে ড্যাশবোর্ড থেকে “ফেরত পেয়েছি” চাপুন।" };
 

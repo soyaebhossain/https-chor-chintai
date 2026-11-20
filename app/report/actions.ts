@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { reportSchema, type FieldErrors, type ReportInput } from "@/lib/report-schema";
+import { identifierIssues, reportSchema, type FieldErrors, type ReportInput } from "@/lib/report-schema";
 import { getSession } from "@/lib/server/auth";
 import { readEvidence, submitReport } from "@/lib/server/claims";
 import { clientIp, formatRetry, rateLimit } from "@/lib/server/rate-limit";
@@ -31,6 +31,8 @@ export async function submitReportAction(_prev: ReportState, form: FormData): Pr
       errors[key] ??= issue.message;
     }
   }
+  // zod skips the number checks while other fields are invalid; run them anyway so they show at once.
+  Object.assign(errors, identifierIssues(raw.category, raw.identifier, raw.identifier2), { ...errors });
   const files = form.getAll("evidence").filter((f): f is File => f instanceof File);
   const evidence = await readEvidence(files, { required: true });
   if (!evidence.ok) errors.evidence = evidence.error;

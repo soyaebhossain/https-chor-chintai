@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { searchRegistry } from "@/lib/server/registry";
+import { getSession } from "@/lib/server/auth";
+import { ownUnpublishedReport, searchRegistry } from "@/lib/server/registry";
 import { clientIp, rateLimit } from "@/lib/server/rate-limit";
 import { TURNSTILE_ERROR, verifyTurnstile } from "@/lib/server/turnstile";
 
@@ -8,9 +9,11 @@ const MAX_QUERY = 128;
 
 const noStore = { "Cache-Control": "no-store" };
 
-// Enough for a real buyer checking a handful of devices; far too slow to enumerate IMEI ranges.
-const PER_MINUTE = 10;
-const PER_DAY = 200;
+// Per IP. Bangladeshi mobile operators put many subscribers behind one public IP (carrier-grade NAT),
+// so the limit must leave room for a crowd of real buyers while staying far too slow to enumerate IMEI
+// ranges (1 000/day is ~0.000001% of one phone model's IMEI space). Turnstile adds the per-person check.
+const PER_MINUTE = 30;
+const PER_DAY = 1000;
 
 export async function POST(request: Request) {
   let body: z.infer<typeof Body>;
@@ -42,6 +45,11 @@ export async function POST(request: Request) {
     }
 
     const result = await searchRegistry(body.query);
+    if (result.status !== "reported" && result.status !== "disputed") {
+      const session = await getSession();
+      const own = session ? await ownUnpublishedReport(session.user.id, body.query) : null;
+      if (own) return Response.json({ status: "own", report: own }, { status: 200, headers: noStore });
+    }
     return Response.json(result, { status: result.status === "invalid" ? 422 : 200, headers: noStore });
   } catch (error) {
     // Never log the identifier itself.

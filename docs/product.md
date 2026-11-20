@@ -29,6 +29,26 @@ The fourth row matters as much as the first: a public "stolen" flag on someone's
 
 **Real numbers on the home page** (active reports, items returned to owners) replace marketing copy that the data could not back up.
 
+## Lessons from real use (Nov 2026)
+
+A tester reported "01716573526" and then found "no record" when searching it. Two separate causes, and the fixes they led to:
+
+- **Unreviewed reports are invisible by design**, but the reporter had no way to know that. Now a signed-in owner searching their own number sees "your report is under review / needs info / was rejected" — visible only to them, never to the public.
+- **It wasn't an IMEI at all** — it was the owner's SIM number. Phone serials are alphanumeric, so for phones any digits-only value that isn't an IMEI is now refused with an explanation (a BD mobile number is named as such), and searching a SIM number warns instead of saying "no record".
+
+The same review turned up related input problems, all fixed:
+
+| Input | Before | Now |
+|---|---|---|
+| 14-digit IMEI (check digit left off) | rejected | check digit added |
+| 16-digit IMEISV (some phones show this) | rejected | first 14 digits + check digit |
+| letter O for zero / I or L for one in an IMEI | rejected | corrected when that yields a valid IMEI |
+| "IMEI: …", "IMEI1 …", "+880…" | rejected / not matched | label and leading + ignored |
+| Bengali number plate ("ঢাকা মেট্রো-ল …") | "use English letters" | explains plates can't be searched; use the chassis number |
+| wrong IMEI on the report form | shown only after every other field was valid | shown immediately |
+| email typo at sign-up (gmial.com) | accepted silently | "did you mean gmail.com?" one-tap fix |
+| per-IP limits (search 10/min, sign-up 5/h) | would block whole mobile networks: GP, Robi and Banglalink put many users behind one IP (carrier-grade NAT) | search 30/min and 1000/day, sign-up 20/h, login 60/15 min per IP; per-email limits unchanged |
+
 ## Known gaps (next steps, in priority order)
 
 1. Phone-number OTP login — most Bangladeshi users are more comfortable with SMS than email. Needs an SMS gateway (e.g. SSL Wireless, Alpha SMS, BulkSMSBD) and a cost decision.

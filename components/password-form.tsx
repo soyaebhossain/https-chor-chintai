@@ -6,6 +6,7 @@ import { passwordAuthAction, type PasswordState } from "@/app/login/password-act
 import LoginForm from "@/components/login-form";
 import { buttonClass, FieldError, inputClass } from "@/components/page-bits";
 import Turnstile, { type TurnstileHandle } from "@/components/turnstile";
+import { suggestEmail } from "@/lib/email-typo";
 
 const tab = (active: boolean) =>
   `flex-1 rounded-xl px-4 py-2.5 text-sm font-bold ${active ? "bg-emerald-900 text-white" : "text-slate-500 hover:bg-emerald-50"}`;
@@ -20,6 +21,8 @@ export default function PasswordForm({ next, codeLogin }: { next: string; codeLo
   const setMode = (m: "login" | "signup") => setPicked({ mode: m, for: state });
   const [useCode, setUseCode] = useState(false);
   const [show, setShow] = useState(false);
+  const [emailHint, setEmailHint] = useState<string | null>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
   const turnstile = useRef<TurnstileHandle>(null);
   useEffect(() => { turnstile.current?.reset(); }, [state]);
 
@@ -42,7 +45,9 @@ export default function PasswordForm({ next, codeLogin }: { next: string; codeLo
       <input type="hidden" name="next" value={next} />
       <div>
         <label htmlFor="pw-email" className="mb-2 block text-sm font-bold text-emerald-950">ইমেইল ঠিকানা</label>
-        <input id="pw-email" name="email" type="email" autoComplete="email" required defaultValue={state.email} className={inputClass} placeholder="you@example.com" />
+        <input id="pw-email" ref={emailRef} name="email" type="email" autoComplete="email" required defaultValue={state.email} onBlur={(e) => setEmailHint(suggestEmail(e.target.value))} onChange={() => emailHint && setEmailHint(null)} aria-describedby={emailHint ? "pw-email-hint" : undefined} className={inputClass} placeholder="you@example.com" />
+        {emailHint && <p id="pw-email-hint" role="status" className="mt-1.5 text-sm text-amber-800">আপনি কি <b>{emailHint}</b> লিখতে চেয়েছেন?{" "}
+          <button type="button" onClick={() => { if (emailRef.current) emailRef.current.value = emailHint; setEmailHint(null); }} className="font-bold text-emerald-700 underline underline-offset-4">হ্যাঁ, ঠিক করুন</button></p>}
       </div>
       <div>
         <label htmlFor="pw-password" className="mb-2 block text-sm font-bold text-emerald-950">পাসওয়ার্ড</label>

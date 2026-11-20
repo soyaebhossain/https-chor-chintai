@@ -27,7 +27,7 @@ export async function passwordAuthAction(prev: PasswordState, form: FormData): P
   const db = getDb();
 
   if (mode === "signup") {
-    const limit = await rateLimit("signup-ip", ip, 5, 3600);
+    const limit = await rateLimit("signup-ip", ip, 20, 3600) /* shared mobile IPs (CGNAT) */;
     if (!limit.ok) return { mode, email, error: `অনেকগুলো অ্যাকাউন্ট খোলার চেষ্টা হয়েছে। ${formatRetry(limit.retryAfterSeconds)} পর আবার চেষ্টা করুন।` };
     if (!(await verifyTurnstile(form.get(TURNSTILE_FIELD), ip))) return { mode, email, error: TURNSTILE_ERROR };
     const problem = passwordProblem(password, email);
@@ -60,7 +60,7 @@ export async function passwordAuthAction(prev: PasswordState, form: FormData): P
   }
 
   // Login
-  const ipLimit = await rateLimit("password-login-ip", ip, 20, 900);
+  const ipLimit = await rateLimit("password-login-ip", ip, 60, 900) /* shared mobile IPs; per-email limit below stays strict */;
   const emailLimit = await rateLimit("password-login-email", email, 10, 900);
   const blocked = !ipLimit.ok ? ipLimit : !emailLimit.ok ? emailLimit : null;
   if (blocked) return { mode, email, error: `অনেকবার ভুল চেষ্টা হয়েছে। ${formatRetry(blocked.retryAfterSeconds)} পর আবার চেষ্টা করুন।` };
