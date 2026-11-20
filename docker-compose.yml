@@ -1,3 +1,6 @@
+# Local PostgreSQL, if you want to develop against the same database as production:
+#   docker compose up -d
+#   DATABASE_URL=postgresql://registry:registry@localhost:5432/registry npm run dev
 services:
   postgres:
     image: postgres:17-alpine
@@ -5,18 +8,7 @@ services:
       POSTGRES_USER: registry
       POSTGRES_PASSWORD: registry
       POSTGRES_DB: registry
-    ports: ["5432:5432"]
+    ports: ["127.0.0.1:5432:5432"]
     volumes: ["postgres_data:/var/lib/postgresql/data"]
     healthcheck: { test: ["CMD-SHELL", "pg_isready -U registry"], interval: 5s, timeout: 3s, retries: 10 }
-  redis:
-    image: redis:8-alpine
-    command: redis-server --appendonly yes
-    ports: ["6379:6379"]
-    volumes: ["redis_data:/data"]
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address :9001
-    environment: { MINIO_ROOT_USER: minio, MINIO_ROOT_PASSWORD: change-me }
-    ports: ["9000:9000", "9001:9001"]
-    volumes: ["minio_data:/data"]
-volumes: { postgres_data: {}, redis_data: {}, minio_data: {} }
+volumes: { postgres_data: {} }
