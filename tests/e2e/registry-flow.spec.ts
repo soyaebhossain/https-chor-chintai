@@ -3,6 +3,9 @@ import { createHmac, randomInt } from "node:crypto";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { resetRateLimits } from "./helpers";
+
+test.beforeEach(resetRateLimits);
 
 const run = Date.now().toString(36);
 const reporter = `reporter-${run}@e2e.test`;
@@ -168,7 +171,8 @@ test("report (dual IMEI) → MFA reviewer approves → search → appeal → rec
 
   // Reviewer marks it "under appeal" → the public sees the softer warning.
   await reviewerPage.goto("/admin");
-  await reviewerPage.getByRole("link", { name: "দেখুন →" }).first().click();
+  await reviewerPage.locator("li").filter({ hasText: trackingId }).getByRole("link", { name: "দেখুন →" }).click();
+  await expect(reviewerPage).toHaveURL(/\/admin\/disputes\//);
   await expect(reviewerPage.getByText("আমি পণ্যটি বৈধভাবে কিনেছি")).toBeVisible();
   await reviewerPage.getByText("প্রাথমিকভাবে যুক্তিসঙ্গত").click();
   await reviewerPage.getByRole("button", { name: "সিদ্ধান্ত সংরক্ষণ করুন" }).click();
@@ -176,7 +180,8 @@ test("report (dual IMEI) → MFA reviewer approves → search → appeal → rec
   expect((await search(other, imei)).status).toBe("disputed");
 
   // ...then dismisses it with a reason → back to "reported"; both parties see the outcome.
-  await reviewerPage.getByRole("link", { name: "দেখুন →" }).first().click();
+  await reviewerPage.locator("li").filter({ hasText: trackingId }).getByRole("link", { name: "দেখুন →" }).click();
+  await expect(reviewerPage).toHaveURL(/\/admin\/disputes\//);
   await reviewerPage.getByText("আপত্তি খারিজ", { exact: true }).click();
   await reviewerPage.getByRole("button", { name: "সিদ্ধান্ত সংরক্ষণ করুন" }).click();
   await expect(reviewerPage.getByText(/কারণ লিখুন/)).toBeVisible(); // a reason is mandatory
