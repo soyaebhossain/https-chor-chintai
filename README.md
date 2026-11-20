@@ -1,32 +1,55 @@
-# চোর ছিনতাই — Trusted Product Registry MVP
+# চোর ছিনতাই — চুরি হওয়া পণ্যের রেজিস্ট্রি
 
-চুরি/ছিনতাই হওয়া পণ্যের Serial, IMEI, VIN বা Service Tag রিপোর্ট ও যাচাইয়ের একটি runnable MVP। বর্তমান UI demo data ব্যবহার করে; production integrations-এর interfaces ও data model scaffold করা আছে।
+সেকেন্ডহ্যান্ড মোবাইল, ল্যাপটপ, বাইক বা গাড়ি কেনার আগে IMEI / Serial / VIN দিয়ে দেখা যায় পণ্যটি চুরি, ছিনতাই বা হারানোর **যাচাইকৃত** রিপোর্টে আছে কি না। মালিক নিজের হারানো পণ্য প্রমাণসহ রিপোর্ট করেন, একজন যাচাইকারী অনুমোদন দিলে তবেই সেটি সার্চে সতর্কতা হিসেবে দেখায়।
 
-## Included
+## যেভাবে কাজ করে
 
-- Public identifier search with safe redacted results
-- Theft/loss claim form and evidence upload UI
-- User claim-status dashboard
-- Admin verification queue demo
-- Drizzle schema for users, products, identifiers, claims, documents and audit logs
-- NestJS API and BullMQ worker reference services under `services/`
-- Docker Compose for PostgreSQL, Redis and MinIO
-- Security, API and architecture notes under `docs/`
+1. **রিপোর্ট** (`/report`): পণ্য, নম্বর, ঘটনা, জিডি নম্বর বা প্রমাণ ফাইল, আর মোবাইল নম্বর। কোনো অ্যাকাউন্ট লাগে না। জমা দিলে একটি Tracking ID পাওয়া যায়।
+2. **আমার রিপোর্ট** (`/dashboard`): যে ব্রাউজার থেকে জমা দেওয়া হয়েছে সেখানে রিপোর্টগুলো সঙ্গে সঙ্গে দেখায়। অন্য ফোনে দেখতে Tracking ID + মোবাইল নম্বর দিন। পণ্য ফেরত পেলে "পণ্য ফেরত পেয়েছি" চাপুন, সতর্কতা উঠে যাবে।
+3. **যাচাই** (`/admin`): যাচাইকারী পুরো নম্বর, প্রমাণ ও একই নম্বরের অন্য রিপোর্ট দেখে অনুমোদন / আরও তথ্য চাওয়া / প্রত্যাখ্যান করেন।
+4. **পণ্য যাচাই** (`/`): শুধু অনুমোদিত রিপোর্ট মেলে, আর ফলাফলে নম্বরের শেষ ৪ অক্ষরের বেশি দেখায় না।
 
-## Run the web app
+## লোকালে চালানো
 
 ```bash
 npm install
-cp .env.example .env
+cp .env.example .env      # ADMIN_PASSWORD দিন, বাকিগুলো ডেভেলপমেন্টে ফাঁকা রাখা যায়
 npm run dev
 ```
 
-Open `http://localhost:3000`. Demo reported IMEI: `356938035643809`.
+`http://localhost:3000` খুলুন। `DATABASE_URL` ফাঁকা থাকলে `.data/pglite`-এ একটি এমবেডেড PostgreSQL (PGlite) তৈরি হয়, আলাদা কিছু ইনস্টল করতে হয় না। আসল PostgreSQL চাইলে `docker compose up -d` চালিয়ে `DATABASE_URL` সেট করুন।
 
-## Production gate
+| কমান্ড | কাজ |
+| --- | --- |
+| `npm run dev` | ডেভেলপমেন্ট সার্ভার |
+| `npm test` | ইউনিট ও ডেটাবেজ টেস্ট (Vitest + ইন-মেমরি PGlite) |
+| `npm run lint` / `npm run typecheck` | ESLint / TypeScript |
+| `npm run build && npm start` | প্রোডাকশন বিল্ড |
+| `npm run db:generate` | `db/schema.ts` বদলালে নতুন migration তৈরি |
 
-The frontend builds independently with `npm run build`. The reference API and worker are intentionally separate deployables; install and run them from their own service folders when wiring PostgreSQL, Redis, Auth0 and object storage.
+Migration (`drizzle/`) প্রথম ডেটাবেজ ব্যবহারের সময় নিজে থেকেই চলে।
 
-## Important
+## প্রোডাকশনে ডিপ্লয়
 
-This is an MVP foundation, not a legally approved production registry. Obtain jurisdiction-specific privacy, defamation, evidence-retention and law-enforcement advice before launch.
+যেকোনো Node.js 22 হোস্ট (Vercel, Railway, Render, VPS) + PostgreSQL 15+ (Neon, Supabase, RDS…)।
+
+প্রয়োজনীয় env (বিস্তারিত `.env.example`-এ):
+
+- `DATABASE_URL` — PostgreSQL কানেকশন
+- `IDENTIFIER_HMAC_SECRET`, `FIELD_ENCRYPTION_KEY`, `SESSION_SECRET` — প্রতিটি `openssl rand -hex 32`। **লঞ্চের পর প্রথম দুটি বদলাবেন না**, বদলালে পুরনো রিপোর্ট আর খোঁজা বা পড়া যাবে না।
+- `ADMIN_PASSWORD` — যাচাইকারী কনসোলের পাসওয়ার্ড (১২+ অক্ষর)
+- `NEXT_PUBLIC_SITE_URL` — যেমন `https://chorchintai.com`
+
+এগুলো ছাড়া প্রোডাকশন সার্ভার চালু হবে না, যাতে ভুল করে দুর্বল কনফিগারেশনে লঞ্চ না হয়।
+
+## কোড কোথায়
+
+- `app/` — পেজ ও `actions.ts` (সব server action: সার্চ, রিপোর্ট, যাচাই)
+- `lib/reports.ts` — ব্যবসায়িক লজিক, `lib/identifiers.ts` — নম্বর চেনা ও IMEI Luhn যাচাই
+- `lib/crypto.ts` — HMAC, AES-256-GCM এনক্রিপশন, সাইন করা কুকি
+- `db/schema.ts` — টেবিল: `reporters`, `reports`, `evidence`, `audit_logs`
+- `docs/` — আর্কিটেকচার ও নিরাপত্তা নোট
+
+## গুরুত্বপূর্ণ
+
+এটি সরকারি ডেটাবেজ নয়। লঞ্চের আগে গোপনীয়তা, মানহানি ও প্রমাণ সংরক্ষণ নিয়ে আইনজ্ঞের পরামর্শ নিন, এবং Privacy Policy ও Terms প্রকাশ করুন।
