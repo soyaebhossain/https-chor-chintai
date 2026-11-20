@@ -233,6 +233,7 @@ test("INITIAL_ADMIN_EMAIL bootstraps exactly one admin, then goes inert", async 
   const sql = postgres(process.env.DATABASE_URL!, { max: 1 });
   try {
     await sql`delete from users where email = 'first-admin@e2e.test'`;
+    await sql`delete from login_codes where email = 'first-admin@e2e.test'`; // fixed address: don't trip the per-email code limit across runs
     const [{ n }] = await sql`select count(*)::int as n from users where role = 'ADMIN'`;
 
     const page = await (await browser.newContext()).newPage();
