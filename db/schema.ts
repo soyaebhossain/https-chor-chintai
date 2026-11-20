@@ -1,4 +1,5 @@
 import {
+  customType,
   index,
   integer,
   jsonb,
@@ -221,3 +222,15 @@ export const auditLogs = pgTable(
     index("audit_logs_actor_idx").on(t.actorId),
   ],
 );
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
+
+/**
+ * Encrypted evidence files when no S3 bucket is configured. Holds only
+ * AES-256-GCM ciphertext (same format as the bucket), keyed like an object key.
+ */
+export const evidenceObjects = pgTable("evidence_objects", {
+  key: text("key").primaryKey(),
+  data: bytea("data").notNull(),
+  createdAt: createdAt(),
+});

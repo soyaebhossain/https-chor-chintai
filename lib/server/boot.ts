@@ -1,8 +1,9 @@
 import "server-only";
-import { getEnv } from "./env";
+import { getEnv, productionGaps } from "./env";
 
 try {
-  getEnv();
+  const env = getEnv();
+  for (const gap of productionGaps(env)) console.warn(`[config] ${gap}`);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   console.error("Refusing to start. Copy .env.example to .env and fill in real values.");

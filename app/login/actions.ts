@@ -9,9 +9,11 @@ import { auditLogs, users } from "@/db/schema";
 import { safeNextPath } from "@/lib/safe-path";
 import { bootstrapFirstAdmin, createSession, isStaff } from "@/lib/server/auth";
 import { consumeLoginCode, issueLoginCode, recentCodeCount } from "@/lib/server/login-codes";
-import { sendMail } from "@/lib/server/mailer";
+import { mailAvailable, sendMail } from "@/lib/server/mailer";
 import { clientIp, formatRetry, rateLimit } from "@/lib/server/rate-limit";
 import { TURNSTILE_ERROR, TURNSTILE_FIELD, verifyTurnstile } from "@/lib/server/turnstile";
+
+const LOGIN_UNAVAILABLE = "ইমেইলে লগইন এখনো চালু হয়নি। পণ্য যাচাই (সার্চ) এখনই ব্যবহার করতে পারেন।";
 
 export type LoginState = { step: "email" | "code"; email?: string; error?: string };
 
@@ -25,6 +27,7 @@ export async function loginAction(prev: LoginState, form: FormData): Promise<Log
   const email = parsedEmail.data;
 
   if (intent === "send") {
+    if (!mailAvailable()) return { step: "email", email, error: LOGIN_UNAVAILABLE };
     const ipLimit = await rateLimit("login-send-ip", ip, 10, 3600);
     if (!ipLimit.ok) return { step: "email", email, error: `অনেকবার চেষ্টা হয়েছে। ${formatRetry(ipLimit.retryAfterSeconds)} পর আবার চেষ্টা করুন।` };
     if (!(await verifyTurnstile(form.get(TURNSTILE_FIELD), ip))) return { step: prev.step, email, error: TURNSTILE_ERROR };

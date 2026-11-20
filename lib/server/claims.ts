@@ -3,7 +3,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, gte, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { auditLogs, claimDocuments, claims, disputes, identifiers, products, recoveries, users } from "@/db/schema";
-import { MAX_FILE_BYTES, MAX_FILES, sniffEvidenceMime, type EvidenceMime } from "@/lib/evidence";
+import { MAX_FILE_BYTES, MAX_FILES, MAX_TOTAL_BYTES, sniffEvidenceMime, type EvidenceMime } from "@/lib/evidence";
 import { classifyForReport, lastFour, type IdentifierType } from "@/lib/identifiers";
 import { INCIDENT_LABEL, KIND_OF, type ReportInput } from "@/lib/report-schema";
 import { encryptField, identifierHmac } from "@/lib/server/crypto";
@@ -30,9 +30,10 @@ export async function readEvidence(files: File[], { required }: { required: bool
   const real = files.filter((f) => f.size > 0);
   if (required && real.length === 0) return { ok: false, error: "মালিকানার অন্তত একটি প্রমাণ (রসিদ, বক্সের ছবি বা জিডি) যুক্ত করুন।" };
   if (real.length > MAX_FILES) return { ok: false, error: `সর্বোচ্চ ${MAX_FILES.toLocaleString("bn-BD")}টি ফাইল দেওয়া যাবে।` };
+  if (real.reduce((n, f) => n + f.size, 0) > MAX_TOTAL_BYTES) return { ok: false, error: "সব ফাইল মিলিয়ে 4MB-এর বেশি হয়ে গেছে। কম বা ছোট ফাইল দিন।" };
   const items: Evidence[] = [];
   for (const file of real) {
-    if (file.size > MAX_FILE_BYTES) return { ok: false, error: `"${file.name}" ১০MB-এর বেশি বড়।` };
+    if (file.size > MAX_FILE_BYTES) return { ok: false, error: `"${file.name}" অনেক বড় (সর্বোচ্চ 4MB)।` };
     const bytes = new Uint8Array(await file.arrayBuffer());
     const mime = sniffEvidenceMime(bytes);
     if (!mime) return { ok: false, error: `"${file.name}" PDF, JPG বা PNG নয়।` };

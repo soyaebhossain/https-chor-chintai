@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { decryptBuffer, decryptField, encryptBuffer, encryptField, identifierHmac, keyedHash } from "@/lib/server/crypto";
-import { getEnv } from "@/lib/server/env";
+import { getEnv, productionGaps, usesS3 } from "@/lib/server/env";
 
 const goodEnv = {
   NODE_ENV: "test",
@@ -42,26 +42,31 @@ describe("getEnv", () => {
     expect(() => getEnv({ ...goodEnv, FIELD_ENCRYPTION_KEY: randomBytes(16).toString("base64") })).toThrow(/32 bytes/);
   });
 
-  it("requires SMTP only in production", () => {
-    expect(getEnv(goodEnv).SMTP_URL).toBeUndefined();
-    expect(() => getEnv({ ...goodEnv, NODE_ENV: "production" })).toThrow(/SMTP_URL is required in production/);
-    expect(getEnv({ ...goodEnv, NODE_ENV: "production", ...prodExtras }).SMTP_URL).toBeDefined();
+  it("boots in production without optional services, but reports each gap", () => {
+    const env = getEnv({ ...goodEnv, NODE_ENV: "production", S3_BUCKET: undefined, S3_ACCESS_KEY_ID: undefined, S3_SECRET_ACCESS_KEY: undefined } as NodeJS.ProcessEnv);
+    expect(usesS3(env)).toBe(false);
+    expect(productionGaps(env).join(" ")).toMatch(/email login is disabled.*Turnstile.*PostgreSQL.*CONTACT/);
+    expect(productionGaps(getEnv({ ...goodEnv, NODE_ENV: "production", ...prodExtras }))).toEqual([]);
   });
 
-  it("requires Turnstile and a contact address in production", () => {
+  it("requires SMTP_URL and MAIL_FROM together", () => {
+    expect(() => getEnv({ ...goodEnv, SMTP_URL: "smtps://u:p@smtp.test:465" })).toThrow(/Set both SMTP_URL and MAIL_FROM/);
+  });
+
+  it("flags missing Turnstile and contact address in production instead of refusing to boot", () => {
     const prod = { ...goodEnv, NODE_ENV: "production", ...prodExtras } as NodeJS.ProcessEnv;
-    expect(() => getEnv({ ...prod, NEXT_PUBLIC_TURNSTILE_SITE_KEY: "", TURNSTILE_SECRET_KEY: "" })).toThrow(/NEXT_PUBLIC_TURNSTILE_SITE_KEY is required in production/);
-    expect(() => getEnv({ ...prod, NEXT_PUBLIC_CONTACT_EMAIL: "" })).toThrow(/NEXT_PUBLIC_CONTACT_EMAIL is required in production/);
+    expect(productionGaps(getEnv({ ...prod, NEXT_PUBLIC_TURNSTILE_SITE_KEY: "", TURNSTILE_SECRET_KEY: "" })).join(" ")).toMatch(/Turnstile keys not set/);
+    expect(productionGaps(getEnv({ ...prod, NEXT_PUBLIC_CONTACT_EMAIL: "" })).join(" ")).toMatch(/NEXT_PUBLIC_CONTACT_EMAIL not set/);
   });
 
   it("rejects half-configured Turnstile even in development", () => {
     expect(() => getEnv({ ...goodEnv, TURNSTILE_SECRET_KEY: "secret" })).toThrow(/or neither/);
   });
 
-  it("requires the evidence bucket settings", () => {
+  it("requires a complete bucket once S3 credentials are given", () => {
     const rest = { ...goodEnv };
     delete rest.S3_BUCKET;
-    expect(() => getEnv(rest)).toThrow(/S3_BUCKET is required/);
+    expect(() => getEnv(rest)).toThrow(/S3_BUCKET is required when S3 storage is configured/);
   });
 
   it("rejects a non-postgres database URL", () => {

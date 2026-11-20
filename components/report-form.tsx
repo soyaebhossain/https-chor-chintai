@@ -6,7 +6,8 @@ import { AlertTriangle, ArrowRight, CheckCircle2, FileText, UploadCloud, X } fro
 import { submitReportAction, type ReportState } from "@/app/report/actions";
 import { buttonClass, FieldError, inputClass } from "@/components/page-bits";
 import Turnstile, { type TurnstileHandle } from "@/components/turnstile";
-import { ACCEPT_ATTR, MAX_FILE_BYTES, MAX_FILES } from "@/lib/evidence";
+import { ACCEPT_ATTR, LIMIT_LABEL } from "@/lib/evidence";
+import { prepareEvidence } from "@/lib/evidence-client";
 import { CATEGORIES, INCIDENT_LABEL, INCIDENT_TYPES, KIND_OF, NUMBER_HELP, type Category } from "@/lib/report-schema";
 
 const label = "mb-2 block text-sm font-bold text-emerald-950";
@@ -45,14 +46,13 @@ export default function ReportForm() {
     </div>;
   }
 
-  function addFiles(list: FileList | null) {
-    if (!list) return;
-    const next = [...files, ...Array.from(list)];
-    const tooBig = next.find((f) => f.size > MAX_FILE_BYTES);
-    if (tooBig) { setFileError(`"${tooBig.name}" ১০MB-এর বেশি বড়।`); return; }
-    if (next.length > MAX_FILES) { setFileError(`সর্বোচ্চ ${MAX_FILES.toLocaleString("bn-BD")}টি ফাইল দেওয়া যাবে।`); return; }
+  async function addFiles(list: FileList | null) {
+    if (!list || list.length === 0) return;
+    const picked = Array.from(list);
     setFileError(undefined);
-    setFiles(next);
+    const prepared = await prepareEvidence(picked, files);
+    if (!prepared.ok) { setFileError(prepared.error); return; }
+    setFiles(prepared.files);
   }
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -98,8 +98,8 @@ export default function ReportForm() {
         <label className="grid cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50 p-8 text-center focus-within:ring-4 focus-within:ring-emerald-100">
           <UploadCloud className="size-8 text-emerald-700"/>
           <span className="mt-2 text-sm font-bold text-emerald-900">ফাইল বা ছবি যুক্ত করুন</span>
-          <span className="mt-1 text-xs leading-5 text-slate-500">যেকোনো একটি যথেষ্ট: ক্রয়ের রসিদ, নম্বরসহ বক্সের ছবি, জিডির কপি, রেজিস্ট্রেশন কাগজ।<br/>PDF, JPG বা PNG · প্রতিটি সর্বোচ্চ 10MB · ফাইল এনক্রিপ্ট করে গোপনে রাখা হয়, কখনো প্রকাশ হয় না।</span>
-          <input name="evidence" type="file" multiple accept={ACCEPT_ATTR} className="sr-only" onChange={(ev) => { addFiles(ev.target.files); ev.target.value = ""; }}/>
+          <span className="mt-1 text-xs leading-5 text-slate-500">যেকোনো একটি যথেষ্ট: ক্রয়ের রসিদ, নম্বরসহ বক্সের ছবি, জিডির কপি, রেজিস্ট্রেশন কাগজ।<br/>PDF, JPG বা PNG · {LIMIT_LABEL} · ফাইল এনক্রিপ্ট করে গোপনে রাখা হয়, কখনো প্রকাশ হয় না।</span>
+          <input name="evidence" type="file" multiple accept={ACCEPT_ATTR} className="sr-only" onChange={(ev) => { const list = ev.target.files; void addFiles(list).finally(() => { ev.target.value = ""; }); }}/>
         </label>
         {files.length > 0 && <ul className="mt-3 grid gap-2">{files.map((f, i) => <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2 text-sm"><span className="flex min-w-0 items-center gap-2"><FileText className="size-4 shrink-0 text-emerald-700"/><span className="truncate">{f.name}</span><span className="shrink-0 text-xs text-slate-400">{(f.size / 1024 / 1024).toFixed(1)}MB</span></span><button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label={`${f.name} সরান`} className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"><X className="size-4"/></button></li>)}</ul>}
         <FieldError message={fileError ?? e.evidence} />

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { startTransition, useActionState } from "react";
+import { useActionState } from "react";
 import { AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
 import { fileDisputeAction, type DisputeState } from "@/app/dispute/actions";
 import { buttonClass, FieldError, inputClass } from "@/components/page-bits";
-import { ACCEPT_ATTR } from "@/lib/evidence";
+import { ACCEPT_ATTR, LIMIT_LABEL } from "@/lib/evidence";
+import { submitWithEvidence } from "@/lib/evidence-client";
 import { DISPUTE_REASONS } from "@/lib/report-schema";
 
 const label = "mb-2 block text-sm font-bold text-emerald-950";
@@ -24,7 +25,7 @@ export default function DisputeForm() {
     </div>;
   }
 
-  return <form onSubmit={(ev) => { ev.preventDefault(); const data = new FormData(ev.currentTarget); startTransition(() => action(data)); }} noValidate className="grid gap-5 rounded-[2rem] border border-emerald-950/10 bg-white p-5 shadow-xl shadow-emerald-950/5 md:p-8">
+  return <form onSubmit={(ev) => { ev.preventDefault(); void submitWithEvidence(new FormData(ev.currentTarget), action); }} noValidate className="grid gap-5 rounded-[2rem] border border-emerald-950/10 bg-white p-5 shadow-xl shadow-emerald-950/5 md:p-8">
     {state.formError && <div role="alert" className="flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold leading-6 text-red-800"><AlertTriangle className="size-5 shrink-0" />{state.formError}</div>}
     <label><span className={label}>যে নম্বরটি “রিপোর্টেড” দেখাচ্ছে</span>
       <input name="identifier" required maxLength={128} autoComplete="off" spellCheck={false} aria-invalid={!!e.identifier} className={`${inputClass} font-mono`} placeholder="IMEI / Serial / VIN" /><FieldError message={e.identifier} /></label>
@@ -35,7 +36,7 @@ export default function DisputeForm() {
       <textarea name="details" required rows={4} maxLength={2000} aria-invalid={!!e.details} className="w-full rounded-xl border border-slate-200 p-4 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100 aria-[invalid=true]:border-red-400" placeholder="কবে, কার কাছ থেকে, কত টাকায় কিনেছেন বা কেন রিপোর্টটি ভুল—লিখুন" /><FieldError message={e.details} /></label>
     <label><span className={label}>প্রমাণ <span className="font-normal text-slate-500">(ঐচ্ছিক, তবে খুবই সহায়ক)</span></span>
       <input name="evidence" type="file" multiple accept={ACCEPT_ATTR} className="block w-full text-sm" />
-      <p className="mt-1.5 text-xs leading-5 text-slate-500">ক্রয়ের রসিদ, বিক্রেতার সাথে চুক্তি বা মেসেজের স্ক্রিনশট। PDF/JPG/PNG, প্রতিটি সর্বোচ্চ 10MB।</p><FieldError message={e.evidence} /></label>
+      <p className="mt-1.5 text-xs leading-5 text-slate-500">ক্রয়ের রসিদ, বিক্রেতার সাথে চুক্তি বা মেসেজের স্ক্রিনশট। PDF/JPG/PNG · {LIMIT_LABEL}।</p><FieldError message={e.evidence} /></label>
     <label className="flex items-start gap-3 text-sm leading-6 text-slate-600"><input name="attest" type="checkbox" required className="mt-1 accent-emerald-800" />আমি নিশ্চিত করছি যে তথ্যগুলো সত্য এবং মিথ্যা আপত্তির আইনগত দায় সম্পর্কে অবগত।</label>
     <FieldError message={e.attest} />
     <button disabled={pending} className={buttonClass}>{pending ? "জমা হচ্ছে…" : "আপত্তি জমা দিন"} <ArrowRight className="size-4" /></button>

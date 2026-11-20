@@ -5,14 +5,18 @@
  *   npm run storage:init
  */
 import { CreateBucketCommand, HeadBucketCommand, PutPublicAccessBlockCommand, S3Client } from "@aws-sdk/client-s3";
-import { getEnv } from "../lib/server/env";
+import { getEnv, usesS3 } from "../lib/server/env";
 
 const env = getEnv();
+if (!usesS3(env)) {
+  console.log("No S3 credentials set — evidence is stored (encrypted) in PostgreSQL. Nothing to initialise.");
+  process.exit(0);
+}
 const s3 = new S3Client({
   endpoint: env.S3_ENDPOINT,
   region: env.S3_REGION,
   forcePathStyle: env.S3_FORCE_PATH_STYLE,
-  credentials: { accessKeyId: env.S3_ACCESS_KEY_ID, secretAccessKey: env.S3_SECRET_ACCESS_KEY },
+  credentials: { accessKeyId: env.S3_ACCESS_KEY_ID!, secretAccessKey: env.S3_SECRET_ACCESS_KEY! },
 });
 
 try {

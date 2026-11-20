@@ -15,6 +15,13 @@
       "when": 1795182242946,
       "tag": "0001_disputes_and_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795187852105,
+      "tag": "0002_evidence_in_postgres",
+      "breakpoints": true
     }
   ]
 }
